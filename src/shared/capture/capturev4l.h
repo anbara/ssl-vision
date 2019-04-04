@@ -96,6 +96,7 @@ private:
     char szDevice[128];
     struct v4l2_buffer tempbuf;
     image_t img[V4L_STREAMBUFS];
+    static int fmt_uyvy_flg;
     
     bool enqueueBuffer(v4l2_buffer &buf);
     bool dequeueBuffer(v4l2_buffer &buf);

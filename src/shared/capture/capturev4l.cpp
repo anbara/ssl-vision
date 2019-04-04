@@ -61,6 +61,9 @@
 #include <fcntl.h>      //open
 #include <unistd.h>     //close
 
+// Power is power
+int GlobalV4Linstance::fmt_uyvy_flg;
+
 //======================= Singleton Manager =======================
 
 GlobalV4LinstanceManager* GlobalV4LinstanceManager::pinstance = NULL;
@@ -346,6 +349,20 @@ bool GlobalV4Linstance::startStreaming(int iWidth_, int iHeight_, int iInputIdx)
         printf("Warning: Could not set format, '%s'; was device previously started?\n", szDevice);
  //       return(false);
     }
+
+    // Check pixelformat and size
+    // printf("pixfmt = %c %c %c %c \n", (fmt.fmt.pix.pixelformat & 0x000000ff) , (fmt.fmt.pix.pixelformat & 0x0000ff00) >>8 , (fmt.fmt.pix.pixelformat & 0x00ff0000) >>16, (fmt.fmt.pix.pixelformat & 0xff000000) >>24 );
+    // printf("width = %d height = %d\n",fmt.fmt.pix.width,fmt.fmt.pix.height);
+
+    // Switch uyvy and yuy2
+    if ((fmt.fmt.pix.pixelformat & 0x000000ff) == 'U')
+    {
+        fmt_uyvy_flg = 1; //uyvu
+    }
+    else
+    {
+        fmt_uyvy_flg = 0; //yuy2
+    }
     
     // Set Input and Controls (for more advanced v4l as well)
     // http://www.linuxtv.org/downloads/v4l-dvb-apis/vidioc-g-input.html
@@ -526,9 +543,19 @@ bool GlobalV4Linstance::getImageRgb(GlobalV4Linstance::yuyv *pSrc, int width, in
     GlobalV4Linstance::rgb *pDest = (*rgbbuf);
     GlobalV4Linstance::yuv pxCopy;
     for (int iP=0; iP<size; iP++) {
-        pxCopy.y = (iP&1)? pSrc->y2 : pSrc->y1;
-        pxCopy.u = pSrc->u;
-        pxCopy.v = pSrc->v;
+        // UYVY
+        if (fmt_uyvy_flg == 1) {
+            pxCopy.y = (iP&1)? pSrc->v : pSrc->u;
+            pxCopy.u = pSrc->y1;
+            pxCopy.v = pSrc->y2;
+        }
+        // YUY2 (default)
+        else {
+            pxCopy.y = (iP&1)? pSrc->y1 : pSrc->y2;
+            pxCopy.u = pSrc->u;
+            pxCopy.v = pSrc->v;
+            
+        }
         (*pDest) = yuv2rgb(pxCopy);
         pDest++;                //advance destination always
         if (iP&1) pSrc++;       //avoid odd field advancement
