@@ -6,3 +6,4 @@
 /test-data/**
 /.idea
 /.vscode
+cmake-build*
